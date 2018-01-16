@@ -4,12 +4,39 @@
 export class PathHelper {
 
     /**
-     * Method that tells if a path is an item path.
-     * @param path {string} Path that you want to test.
+     * Splits a full path into path segments,
+     * e.g.: /Root/Example('Content1') will be ["Root", "Example", "('Content1')"]
+     * @param path The path to be splitted
+     * @returns {string[]} the segments for the path
+     */
+    public static getSegments(path: string): string[] {
+        return path.split(/\/|[(][']/g)
+            .filter((segment) => (segment && segment.length))
+            .map((segment) => {
+                if (segment.endsWith("')")) {
+                    segment = `('${segment}`;
+                }
+                return segment;
+            });
+    }
+
+    /**
+     * Checks if a specific segment is an Item segment or not (like "('Content1')")
+     * @param segment The segment to be examined
+     */
+    public static isItemSegment(segment: string): boolean {
+        return segment.startsWith("('") && segment.endsWith("')");
+    }
+
+    /**
+     * Method that tells if a path is an item path (e.g. ends with an Item segment).
+     * @param {string} path Path that you want to test.
      * @returns {boolean} Returns if the given path is a path of a Content or not.
      */
     public static isItemPath(path: string): boolean {
-        return path.indexOf("('") >= 0 && path.indexOf("')") === path.length - 2;
+        const segments = this.getSegments(path);
+        const last = segments[segments.length - 1];
+        return this.isItemSegment(last);
     }
 
     /**
@@ -86,5 +113,19 @@ export class PathHelper {
      */
     public static isAncestorOf(ancestorPath: string, descendantPath: string): boolean {
         return descendantPath.indexOf(this.joinPaths(ancestorPath) + "/") === 0;
+    }
+
+    /**
+     * Returns the parent path from a specified path.
+     * e.g. "/Root/Example/Content" will return "/Root/Example"
+     * "Root" will always return "Root"
+     * @param path The content path
+     */
+    public static getParentPath(path: string): string {
+        const segments = this.getSegments(path);
+        if (segments.length > 1) {
+            segments.pop();
+        }
+        return segments.join("/");
     }
 }

@@ -7,6 +7,18 @@ const expect = Chai.expect;
  * Path Helper tests
  */
 export const pathHelperTests = describe("PathHelper", () => {
+
+    describe("#isItemSegment()", () => {
+        it("Should return true for item segments", () => {
+            expect(PathHelper.isItemSegment("('Item1')")).to.be.eq(true);
+        });
+
+        it("Should return false for non-item segments", () => {
+            expect(PathHelper.isItemSegment("Item1")).to.be.eq(false);
+        });
+
+    });
+
     describe("#isItemPath()", () => {
         it("should return true for item paths", () => {
             const isAnItem = PathHelper.isItemPath("/workspace('project')");
@@ -17,6 +29,12 @@ export const pathHelperTests = describe("PathHelper", () => {
             const isNotAnItem = PathHelper.isItemPath("/workspace/project");
             expect(isNotAnItem).to.be.eq(false);
         });
+
+        it("should return false for reference paths", () => {
+            const isNotAnItem = PathHelper.isItemPath("/workspace/('project')/CustomAction");
+            expect(isNotAnItem).to.be.eq(false);
+        });
+
     });
 
     describe("#getContentUrlbyId()", () => {
@@ -89,6 +107,28 @@ export const pathHelperTests = describe("PathHelper", () => {
         it("should return false if content is not an ancestor", () => {
             expect(PathHelper.isAncestorOf("Root/Example/", "Root/Example2/Content1")).to.be.eq(false);
         });
+    });
+
+    describe("#getSegments()", () => {
+        it("Should split the path to segments", () => {
+            expect(PathHelper.getSegments("Root/Example('Content1')"))
+                .to.be.deep.eq(["Root", "Example", "('Content1')"]);
+        });
+    });
+
+    describe("#getParentPath()", () => {
+        it("Should return the parent path in case of more than 1 segments", () => {
+            expect(PathHelper.getParentPath("Root/Example/Content")).to.be.eq("Root/Example");
+        });
+
+        it("Should return the parent path in case of more than 1 segments with item path", () => {
+            expect(PathHelper.getParentPath("Root/Example('Content')")).to.be.eq("Root/Example");
+        });
+
+        it("Should return the path in case of 1 segments", () => {
+            expect(PathHelper.getParentPath("Root")).to.be.eq("Root");
+        });
+
     });
 
 });
