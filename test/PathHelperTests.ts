@@ -16,7 +16,24 @@ export const pathHelperTests = describe("PathHelper", () => {
         it("Should return false for non-item segments", () => {
             expect(PathHelper.isItemSegment("Item1")).to.be.eq(false);
         });
+    });
 
+    describe("#trimSlashes()", () => {
+        it("should trim from the beginning of the segment", () => {
+            expect(PathHelper.trimSlashes("/segment")).to.be.eq("segment");
+        });
+
+        it("should trim multiple slashes from the beginning of the segment", () => {
+            expect(PathHelper.trimSlashes("//////segment")).to.be.eq("segment");
+        });
+
+        it("should trim from the end of the segment", () => {
+            expect(PathHelper.trimSlashes("segment/")).to.be.eq("segment");
+        });
+
+        it("should trim multiple slashes from the end of the segment", () => {
+            expect(PathHelper.trimSlashes("segment///")).to.be.eq("segment");
+        });
     });
 
     describe("#isItemPath()", () => {
@@ -40,31 +57,31 @@ export const pathHelperTests = describe("PathHelper", () => {
     describe("#getContentUrlbyId()", () => {
         it("should return by path if the provided value is a path", () => {
             const url = PathHelper.getContentUrl("/workspace/project");
-            expect(url).to.be.eq("/workspace('project')");
+            expect(url).to.be.eq("workspace/('project')");
         });
 
         it("should return by id if the provided value is id", () => {
             const contentUrl = PathHelper.getContentUrl(1);
-            expect(contentUrl).to.be.eq("/content(1)");
+            expect(contentUrl).to.be.eq("content(1)");
         });
     });
 
     describe("#getContentUrlbyId()", () => {
         it("should create the path with the correct format", () => {
             const contentUrl = PathHelper.getContentUrlbyId(1);
-            expect(contentUrl).to.be.eq("/content(1)");
+            expect(contentUrl).to.be.eq("content(1)");
         });
     });
 
     describe("#getContentUrlByPath()", () => {
         it("should return a proper item path by the given path", () => {
             const contentUrl = PathHelper.getContentUrlByPath("/workspace/project");
-            expect(contentUrl).to.be.eq("/workspace('project')");
+            expect(contentUrl).to.be.eq("workspace/('project')");
         });
 
         it("should return the path itself if it is an item path already", () => {
             const contentUrl = PathHelper.getContentUrlByPath("/workspace('project')");
-            expect(contentUrl).to.be.eq("/workspace('project')");
+            expect(contentUrl).to.be.eq("workspace/('project')");
         });
 
         it("should return an error message if the given argument is an empty string", () => {
@@ -74,7 +91,7 @@ export const pathHelperTests = describe("PathHelper", () => {
 
         it("should return a proper item path for Root only", () => {
             const path = PathHelper.getContentUrlByPath("/Root");
-            expect(path).to.be.eq("/('Root')");
+            expect(path).to.be.eq("('Root')");
         });
     });
 
