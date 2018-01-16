@@ -4,12 +4,53 @@
 export class PathHelper {
 
     /**
-     * Method that tells if a path is an item path.
-     * @param path {string} Path that you want to test.
+     * Trims the slash characters from the beginning and from the end of the path to avoid duplicated slashes
+     * @param {string} path The source path that should be trimmed
+     */
+    public static trimSlashes(path: string) {
+        while (path.endsWith("/")) {
+            path = path.substring(0, path.length - 1);
+        }
+        while (path.startsWith("/")) {
+            path = path.substring(1, path.length);
+        }
+        return path;
+    }
+
+    /**
+     * Splits a full path into path segments,
+     * e.g.: /Root/Example('Content1') will be ["Root", "Example", "('Content1')"]
+     * @param path The path to be splitted
+     * @returns {string[]} the segments for the path
+     */
+    public static getSegments(path: string): string[] {
+        return path.split(/\/|[(][']/g)
+            .filter((segment) => (segment && segment.length))
+            .map((segment) => {
+                if (segment.endsWith("')")) {
+                    segment = `('${segment}`;
+                }
+                return segment;
+            });
+    }
+
+    /**
+     * Checks if a specific segment is an Item segment or not (like "('Content1')")
+     * @param segment The segment to be examined
+     */
+    public static isItemSegment(segment: string): boolean {
+        return segment.startsWith("('") && segment.endsWith("')");
+    }
+
+    /**
+     * Method that tells if a path is an item path (e.g. ends with an Item segment).
+     * @param {string} path Path that you want to test.
      * @returns {boolean} Returns if the given path is a path of a Content or not.
      */
     public static isItemPath(path: string): boolean {
-        return path.indexOf("('") >= 0 && path.indexOf("')") === path.length - 2;
+        const segments = this.getSegments(path);
+        const last = segments[segments.length - 1];
+        return this.isItemSegment(last);
     }
 
     /**
@@ -31,24 +72,11 @@ export class PathHelper {
      * @returns {string} Path in entity format e.g. /workspaces('project') from /workspaces/project
      */
     public static getContentUrlByPath(path: string): string {
-        if (typeof path === "undefined" || path.indexOf("/") < 0 || path.length <= 1) {
-            throw new Error("This is not a valid path.");
+        const segments = this.getSegments(path);
+        if (!this.isItemSegment(segments[segments.length - 1])) {
+            segments[segments.length - 1] = `('${segments[segments.length - 1]}')`;
         }
-        if (this.isItemPath(path)) {
-            return path;
-        }
-
-        const lastSlashPosition = path.lastIndexOf("/");
-        const name = path.substring(lastSlashPosition + 1);
-        const parentPath = path.substring(0, lastSlashPosition);
-
-        let url;
-        if (name.indexOf("Root") > -1) {
-            url = `${parentPath}/('${name}')`;
-        } else {
-            url = `${parentPath}('${name}')`;
-        }
-        return url;
+        return segments.join("/");
     }
 
     /**
@@ -57,7 +85,7 @@ export class PathHelper {
      * @returns {string} e.g. /content(123)
      */
     public static getContentUrlbyId(id: number): string {
-        return `/content(${id})`;
+        return `content(${id})`;
     }
 
     /**
@@ -65,17 +93,8 @@ export class PathHelper {
      * @param args The list of the paths to join
      */
     public static joinPaths(...args: string[]) {
-        const trimSlashes = (path: string) => {
-            if (path.endsWith("/")) {
-                path = path.substring(0, path.length - 1);
-            }
-            if (path.startsWith("/")) {
-                path = path.substring(1, path.length);
-            }
-            return path;
-        };
 
-        return args.map(trimSlashes).join("/");
+        return args.map(this.trimSlashes).join("/");
     }
 
     /**
@@ -86,5 +105,19 @@ export class PathHelper {
      */
     public static isAncestorOf(ancestorPath: string, descendantPath: string): boolean {
         return descendantPath.indexOf(this.joinPaths(ancestorPath) + "/") === 0;
+    }
+
+    /**
+     * Returns the parent path from a specified path.
+     * e.g. "/Root/Example/Content" will return "/Root/Example"
+     * "Root" will always return "Root"
+     * @param path The content path
+     */
+    public static getParentPath(path: string): string {
+        const segments = this.getSegments(path);
+        if (segments.length > 1) {
+            segments.pop();
+        }
+        return segments.join("/");
     }
 }
