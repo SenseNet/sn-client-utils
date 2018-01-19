@@ -1,10 +1,32 @@
+import { IDisposable } from "./Disposable";
 import { ObservableValue } from "./ObservableValue";
 import {ValueObserver} from "./ValueObserver";
 
 /**
- * Type string literal for trace events
+ * Options object for tracing method calls
  */
-export type TraceCallType = "call" | "finished" | "error";
+export interface ITraceMethodOptions<T, K extends keyof T> {
+    /**
+     * The context object. Can be an instance or a constructor for static methods
+     */
+    object: T;
+    /**
+     * The method reference that needs to be traced
+     */
+    method: (...args: any[]) => any & T[K];
+    /**
+     * Callback that will be called right before executing the method
+     */
+    onCalled?: (newValue: ITraceMethodCall) => void;
+    /**
+     * Callback that will be called right after the method returns
+     */
+    onFinished?: (newValue: ITraceMethodFinished) => void;
+    /**
+     * Callback that will be called when a method throws an error
+     */
+    onError?: (newValue: ITraceMethodError) => void;
+}
 
 /**
  * Defines a trace method call object
@@ -14,10 +36,7 @@ export interface ITraceMethodCall {
      * The timestamp when the event occured
      */
     startDateTime: Date;
-    /**
-     * Type of the event. Can be call, finished or error
-     */
-    type: TraceCallType;
+
     /**
      * The provided arguments for the call
      */
@@ -41,11 +60,6 @@ export interface ITraceMethodError extends ITraceMethodCall {
 }
 
 /**
- * Type alias for trace events
- */
-export type ITraceData = ITraceMethodCall | ITraceMethodFinished | ITraceMethodError;
-
-/**
  * Defines a method mapping object
  */
 export interface IMethodMapping {
@@ -56,7 +70,10 @@ export interface IMethodMapping {
     /**
      * An observable for distributing the events
      */
-    observable: ObservableValue<ITraceData>;
+    callObservable: ObservableValue<ITraceMethodCall>;
+
+    finishedObservable: ObservableValue<ITraceMethodFinished>;
+    errorObservable: ObservableValue<ITraceMethodError>;
 }
 
 /**
@@ -78,25 +95,22 @@ export class Trace {
         const objectTrace = this.objectTraces.get(object) as any as IObjectTrace;
         const methodTrace = objectTrace.methodMappings.get(method.name) as IMethodMapping;
         const startDateTime = new Date();
-        methodTrace.observable.setValue({
+        methodTrace.callObservable.setValue({
             arguments: args,
             startDateTime,
-            type: "call",
         } as ITraceMethodCall);
         try {
             const returned = methodTrace.originalMethod.call(object, ...args);
-            methodTrace.observable.setValue({
+            methodTrace.finishedObservable.setValue({
                 arguments: args,
                 startDateTime,
-                type: "finished",
                 finishedDateTime: new Date(),
                 returned,
             } as ITraceMethodFinished);
             return returned;
         } catch (error) {
-            methodTrace.observable.setValue({
+            methodTrace.errorObservable.setValue({
                 arguments: args,
-                type: "error",
                 startDateTime,
                 errorDateTime: new Date(),
                 error,
@@ -107,33 +121,39 @@ export class Trace {
 
     /**
      * Creates an observer that will be observe method calls, finishes and errors
-     * @param object The object that will be used as a context of the method call (instance or constructor)
-     * @param method The original method instance
-     * @param callback The method that will be called on events
-     * @returns {ValueObserver} the ValueObserver instance that can be disposed
+     * @param options The options object for the trace
      */
-    public static method<T extends object, K extends keyof T>(object: T, method: (...args: any[]) => any & T[K], callback: (newValue: ITraceData) => void): ValueObserver<ITraceData> {
+    public static method<T extends object, K extends keyof T>(options: ITraceMethodOptions<T, K>): IDisposable {
         // add object mapping and setup override
-        if (!this.objectTraces.has(object)) {
-            this.objectTraces.set(object, {
+        if (!this.objectTraces.has(options.object)) {
+            this.objectTraces.set(options.object, {
                 methodMappings: new Map(),
             });
-            const overriddenMethod = (...args: any[]) => this.callMethod(object, method, args);
-            Object.defineProperty(overriddenMethod, "name", {value: method.name});
-            (object as any)[method.name] = overriddenMethod;
+            const overriddenMethod = (...args: any[]) => this.callMethod(options.object, options.method, args);
+            Object.defineProperty(overriddenMethod, "name", {value: options.method.name});
+            (options.object as any)[options.method.name] = overriddenMethod;
         }
-        const objectTrace = (this.objectTraces.get(object) as any) as IObjectTrace;
+        const objectTrace = (this.objectTraces.get(options.object) as any) as IObjectTrace;
 
         // add method mapping if needed
-        if (!objectTrace.methodMappings.has(method.name)) {
-            objectTrace.methodMappings.set(method.name, {
-                originalMethod: method,
-                observable: new ObservableValue<ITraceMethodCall | ITraceMethodFinished | ITraceMethodError>(),
+        if (!objectTrace.methodMappings.has(options.method.name)) {
+            objectTrace.methodMappings.set(options.method.name, {
+                originalMethod: options.method,
+                callObservable: new ObservableValue<ITraceMethodCall>(),
+                finishedObservable: new ObservableValue<ITraceMethodFinished>(),
+                errorObservable: new ObservableValue<ITraceMethodError>(),
             });
         }
-        const methodTrace = (objectTrace.methodMappings.get(method.name) as any) as IMethodMapping;
+        const methodTrace = (objectTrace.methodMappings.get(options.method.name) as any) as IMethodMapping;
+        const callbacks = [
+            options.onCalled && methodTrace.callObservable.subscribe(options.onCalled),
+            options.onFinished && methodTrace.finishedObservable.subscribe(options.onFinished),
+            options.onError && methodTrace.errorObservable.subscribe(options.onError),
+        ];
 
         // Subscribe and return the observer
-        return methodTrace.observable.subscribe(callback);
+        return {
+            dispose: () => callbacks.forEach((c) => c && c.dispose()),
+        };
     }
 }
