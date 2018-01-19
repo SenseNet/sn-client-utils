@@ -1,6 +1,5 @@
-import * as Chai from "chai";
+import { expect } from "chai";
 import { Retrier } from "../src";
-const expect = Chai.expect;
 
 /**
  * Retrier tests

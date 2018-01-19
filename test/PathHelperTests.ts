@@ -1,7 +1,5 @@
-import * as Chai from "chai";
-
+import { expect } from "chai";
 import { PathHelper } from "../src";
-const expect = Chai.expect;
 
 /**
  * Path Helper tests
@@ -85,8 +83,8 @@ export const pathHelperTests = describe("PathHelper", () => {
         });
 
         it("should return an error message if the given argument is an empty string", () => {
-            expect(() => {PathHelper.getContentUrlByPath(""); })
-            .to.throws();
+            expect(() => { PathHelper.getContentUrlByPath(""); })
+                .to.throws();
         });
 
         it("should return a proper item path for Root only", () => {
