@@ -1,6 +1,6 @@
 {
   "name": "@sensenet/client-utils",
-  "version": "1.0.0-development.7",
+  "version": "1.0.0-development.8",
   "description": "General sensenet ECM independent client side utilities",
   "main": "dist/index.js",
   "files": [
@@ -11,7 +11,7 @@
   "scripts": {
     "precommit": "npm run test",
     "commit": "git-cz",
-    "pretest": "npm run build:test",
+    "pretest": "npm run build && npm run build:test",
     "test": "rimraf coverage && nyc mocha -p tsconfig.test.json ./temp/test/index.js",
     "check-coverage": "istanbul check-coverage ",
     "report-coverage": "cat ./coverage/lcov.info | ./node_modules/.bin/codecov",
