@@ -5,7 +5,7 @@ import {ValueObserver} from "./ValueObserver";
 /**
  * Options object for tracing method calls
  */
-export interface ITraceMethodOptions<T, K extends keyof T> {
+export interface ITraceMethodOptions<T, K extends keyof T, TReturns> {
     /**
      * The context object. Can be an instance or a constructor for static methods
      */
@@ -13,7 +13,7 @@ export interface ITraceMethodOptions<T, K extends keyof T> {
     /**
      * The method reference that needs to be traced
      */
-    method: (...args: any[]) => any & T[K];
+    method: ((...args: any[]) => TReturns) & T[K];
     /**
      * Callback that will be called right before executing the method
      */
@@ -21,7 +21,7 @@ export interface ITraceMethodOptions<T, K extends keyof T> {
     /**
      * Callback that will be called right after the method returns
      */
-    onFinished?: (newValue: ITraceMethodFinished) => void;
+    onFinished?: (newValue: ITraceMethodFinished<TReturns>) => void;
     /**
      * Callback that will be called when a method throws an error
      */
@@ -46,8 +46,8 @@ export interface ITraceMethodCall {
 /**
  * Defines a trace event when a method call has been finished
  */
-export interface ITraceMethodFinished extends ITraceMethodCall {
-    returned: any;
+export interface ITraceMethodFinished<TReturns> extends ITraceMethodCall {
+    returned: TReturns;
     finishedDateTime: Date;
 }
 
@@ -72,7 +72,7 @@ export interface IMethodMapping {
      */
     callObservable: ObservableValue<ITraceMethodCall>;
 
-    finishedObservable: ObservableValue<ITraceMethodFinished>;
+    finishedObservable: ObservableValue<ITraceMethodFinished<any>>;
     errorObservable: ObservableValue<ITraceMethodError>;
 }
 
@@ -106,7 +106,7 @@ export class Trace {
                 startDateTime,
                 finishedDateTime: new Date(),
                 returned,
-            } as ITraceMethodFinished);
+            } as ITraceMethodFinished<any>);
             return returned;
         } catch (error) {
             methodTrace.errorObservable.setValue({
@@ -123,7 +123,7 @@ export class Trace {
      * Creates an observer that will be observe method calls, finishes and errors
      * @param options The options object for the trace
      */
-    public static method<T extends object, K extends keyof T>(options: ITraceMethodOptions<T, K>): IDisposable {
+    public static method<T extends object, K extends keyof T, TReturns>(options: ITraceMethodOptions<T, K, TReturns>): IDisposable {
         // add object mapping and setup override
         if (!this.objectTraces.has(options.object)) {
             this.objectTraces.set(options.object, {
@@ -140,7 +140,7 @@ export class Trace {
             objectTrace.methodMappings.set(options.method.name, {
                 originalMethod: options.method,
                 callObservable: new ObservableValue<ITraceMethodCall>(),
-                finishedObservable: new ObservableValue<ITraceMethodFinished>(),
+                finishedObservable: new ObservableValue<ITraceMethodFinished<any>>(),
                 errorObservable: new ObservableValue<ITraceMethodError>(),
             });
         }

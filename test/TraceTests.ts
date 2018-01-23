@@ -115,12 +115,10 @@ export const traceTests = describe("Trace tests", () => {
                 method: instance.addInstanceAsync,
                 onFinished: async (traceData) => {
                     expect(args).to.be.deep.eq(traceData.arguments);
-                    if ((traceData as ITraceMethodFinished).returned) {
-                        const returned = await (traceData as ITraceMethodFinished).returned;
-                        expect(returned).to.be.eq(1 + 2 + 3);
-                        observer.dispose();
-                        done();
-                    }
+                    const returned = await traceData.returned;
+                    expect(returned).to.be.eq(1 + 2 + 3);
+                    observer.dispose();
+                    done();
                 },
             });
             instance.addInstanceAsync(...args);
