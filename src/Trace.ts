@@ -124,13 +124,17 @@ export class Trace {
      * @param options The options object for the trace
      */
     public static method<T extends object, K extends keyof T, TReturns>(options: ITraceMethodOptions<T, K, TReturns>): IDisposable {
-        // add object mapping and setup override
+        // add object mapping
         if (!this.objectTraces.has(options.object)) {
             this.objectTraces.set(options.object, {
                 methodMappings: new Map(),
             });
+        }
+        // setup override if needed
+        if (!((options.object as any)[options.method.name] as any).isTraced) {
             const overriddenMethod = (...args: any[]) => this.callMethod(options.object, options.method, args);
             Object.defineProperty(overriddenMethod, "name", {value: options.method.name});
+            Object.defineProperty(overriddenMethod, "isTraced", {value: options.method.name});
             (options.object as any)[options.method.name] = overriddenMethod;
         }
         const objectTrace = (this.objectTraces.get(options.object) as any) as IObjectTrace;
