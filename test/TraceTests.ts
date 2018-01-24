@@ -33,6 +33,10 @@ class MockClass {
         return args.reduce((a, b) => a + b, 0);
     }
 
+    public async testErrorAsync(msg: string): Promise<number> {
+        throw Error(msg);
+    }
+
 }
 
 export const traceTests = describe("Trace tests", () => {
@@ -113,9 +117,10 @@ export const traceTests = describe("Trace tests", () => {
             const observer = Trace.method({
                 object: instance,
                 method: instance.addInstanceAsync,
-                onFinished: async (traceData) => {
+                isAsync: true,
+                onFinished: (traceData) => {
                     expect(args).to.be.deep.eq(traceData.arguments);
-                    const returned = await traceData.returned;
+                    const returned = traceData.returned;
                     expect(returned).to.be.eq(1 + 2 + 3);
                     observer.dispose();
                     done();
@@ -154,6 +159,28 @@ export const traceTests = describe("Trace tests", () => {
                 },
             });
             expect(() => { instance.testError("message"); }).to.throw();
+        });
+
+        it("should handle throwing errors with asyncs", (done: MochaDone) => {
+            const instance = new MockClass("testValue");
+            const observer = Trace.method({
+                object: instance,
+                method: instance.testErrorAsync,
+                isAsync: true,
+                onError: (traceData) => {
+                    if ((traceData as ITraceMethodError).error) {
+                        expect((traceData as ITraceMethodError).error.message).to.be.eq("message");
+                        observer.dispose();
+                        done();
+                    }
+                },
+            });
+            instance.testErrorAsync("message").then(() => {
+                done("Should throw error");
+            }).catch((err) => {
+                /** ignore, done handled in the onError callback */
+            });
+
         });
     });
 
