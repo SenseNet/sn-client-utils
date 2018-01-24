@@ -26,6 +26,11 @@ export interface ITraceMethodOptions<T, K extends keyof T, TReturns> {
      * Callback that will be called when a method throws an error
      */
     onError?: (newValue: ITraceMethodError) => void;
+
+    /**
+     * The method execution will be awaited if set
+     */
+    isAsync?: boolean;
 }
 
 /**
@@ -91,30 +96,65 @@ export interface IObjectTrace {
  */
 export class Trace {
     private static objectTraces: Map<object, IObjectTrace> = new Map();
-    private static callMethod(object: object, method: (...args: any[]) => any, args: any[]) {
+
+    private static getMethodTrace(object: object, method: (...args: any[]) => any): IMethodMapping {
         const objectTrace = this.objectTraces.get(object) as any as IObjectTrace;
-        const methodTrace = objectTrace.methodMappings.get(method.name) as IMethodMapping;
+        return objectTrace.methodMappings.get(method.name) as IMethodMapping;
+    }
+
+    private static traceStart(methodTrace: IMethodMapping, args: any[]) {
         const startDateTime = new Date();
-        methodTrace.callObservable.setValue({
+        const traceValue = {
             arguments: args,
             startDateTime,
-        } as ITraceMethodCall);
+        } as ITraceMethodCall;
+        methodTrace.callObservable.setValue(traceValue);
+        return traceValue;
+    }
+
+    private static traceFinished(methodTrace: IMethodMapping, args: any[], callTrace: ITraceMethodCall, returned: any) {
+        const finishedTrace: ITraceMethodFinished<any> = {
+            arguments: args,
+            startDateTime: callTrace.startDateTime,
+            finishedDateTime: new Date(),
+            returned,
+        };
+        methodTrace.finishedObservable.setValue(finishedTrace);
+    }
+
+    private static traceError(methodTrace: IMethodMapping, args: any[], callTrace: ITraceMethodCall, error: any) {
+        const errorTrace: ITraceMethodError = {
+            arguments: args,
+            startDateTime: callTrace.startDateTime,
+            errorDateTime: new Date(),
+            error,
+        };
+        methodTrace.errorObservable.setValue(errorTrace);
+        return errorTrace;
+    }
+
+    private static callMethod(object: object, method: (...args: any[]) => any, args: any[]) {
+        const methodTrace = this.getMethodTrace(object, method);
+        const start = this.traceStart(methodTrace, args);
         try {
             const returned = methodTrace.originalMethod.call(object, ...args);
-            methodTrace.finishedObservable.setValue({
-                arguments: args,
-                startDateTime,
-                finishedDateTime: new Date(),
-                returned,
-            } as ITraceMethodFinished<any>);
+            this.traceFinished(methodTrace, args, start, returned);
             return returned;
         } catch (error) {
-            methodTrace.errorObservable.setValue({
-                arguments: args,
-                startDateTime,
-                errorDateTime: new Date(),
-                error,
-            } as ITraceMethodError);
+            this.traceError(methodTrace, args, start, error);
+            throw error;
+        }
+    }
+
+    private static async callMethodAsync(object: object, method: (...args: any[]) => any, args: any[]) {
+        const methodTrace = this.getMethodTrace(object, method);
+        const start = this.traceStart(methodTrace, args);
+        try {
+            const returned = await methodTrace.originalMethod.call(object, ...args);
+            this.traceFinished(methodTrace, args, start, returned);
+            return returned;
+        } catch (error) {
+            this.traceError(methodTrace, args, start, error);
             throw error;
         }
     }
@@ -132,7 +172,9 @@ export class Trace {
         }
         // setup override if needed
         if (!((options.object as any)[options.method.name] as any).isTraced) {
-            const overriddenMethod = (...args: any[]) => this.callMethod(options.object, options.method, args);
+            const overriddenMethod = options.isAsync ?
+                ((...args: any[]) => this.callMethodAsync(options.object, options.method, args)) :
+                ((...args: any[]) => this.callMethod(options.object, options.method, args));
             Object.defineProperty(overriddenMethod, "name", {value: options.method.name});
             Object.defineProperty(overriddenMethod, "isTraced", {value: options.method.name});
             (options.object as any)[options.method.name] = overriddenMethod;
