@@ -43,14 +43,14 @@ export class PathHelper {
     }
 
     /**
-     * Method that tells if a path is an item path (e.g. ends with an Item segment).
+     * Method that tells if a path is an item path or an item reference path (e.g. contains an Item segment).
      * @param {string} path Path that you want to test.
      * @returns {boolean} Returns if the given path is a path of a Content or not.
      */
     public static isItemPath(path: string): boolean {
         const segments = this.getSegments(path);
-        const last = segments[segments.length - 1];
-        return this.isItemSegment(last);
+        const itemSegment = segments.find((s) => this.isItemSegment(s));
+        return (itemSegment && itemSegment.length) ? true : false;
     }
 
     /**
