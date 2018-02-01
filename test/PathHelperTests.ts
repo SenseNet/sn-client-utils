@@ -45,9 +45,9 @@ export const pathHelperTests = describe("PathHelper", () => {
             expect(isNotAnItem).to.be.eq(false);
         });
 
-        it("should return false for reference paths", () => {
-            const isNotAnItem = PathHelper.isItemPath("/workspace/('project')/CustomAction");
-            expect(isNotAnItem).to.be.eq(false);
+        it("should return true for reference paths", () => {
+            const isAnItem = PathHelper.isItemPath("/workspace/('project')/CustomAction");
+            expect(isAnItem).to.be.eq(true);
         });
 
     });
