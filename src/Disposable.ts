@@ -6,7 +6,7 @@
  *
  * ```ts
  * class Resource implements IDisposable{
- *       Dispose(){
+ *       dispose(){
  *           // cleanup logics
  *      }
  * }
