@@ -20,13 +20,13 @@ import { RetrierOptions } from "./RetrierOptions";
  *              // ...
  *              return hasSucceeded;
  *          }
- *          const retrierSuccess = await Retrier.Create(methodToRetry)
- *              .Setup({
+ *          const retrierSuccess = await Retrier.create(methodToRetry)
+ *              .setup({
  *                  retries: 3,
  *                  retryIntervalMs: 1,
  *                  timeoutMs: 1000
  *              })
- *              .Run();
+ *              .run();
  * ```
  */
 export class Retrier {
@@ -37,7 +37,7 @@ export class Retrier {
      * Factory method for creating a Retrier
      * @param {()=>Promise<boolean>} callback The method that will be invoked on each try
      */
-    public static Create(callback: () => Promise<boolean>) {
+    public static create(callback: () => Promise<boolean>) {
         return new Retrier(callback, new RetrierOptions());
     }
 
@@ -58,7 +58,7 @@ export class Retrier {
      * @throws Error if the Retrier is running.
      * @returns the Retrier instance
      */
-    public Setup(options: Partial<RetrierOptions>) {
+    public setup(options: Partial<RetrierOptions>) {
         if (this.isRunning) {
             throw Error("Retrier already started!");
         }
@@ -71,7 +71,7 @@ export class Retrier {
      * @throws Error if the Retrier is already started.
      * @returns {Promise<boolean>} A boolean value that indicates if the process has been succeeded.
      */
-    public async Run(): Promise<boolean> {
+    public async run(): Promise<boolean> {
 
         if (this.isRunning) {
             throw Error("Retrier already started!");

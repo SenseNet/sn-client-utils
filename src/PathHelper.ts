@@ -1,5 +1,5 @@
 /**
- * Helper class for path-related methods
+ * Helper class for path-related functions and methods
  */
 export class PathHelper {
 
