@@ -18,7 +18,7 @@ export class ObservableValue<T> implements IDisposable {
         this.observers.clear();
     }
     private observers: Set<ValueObserver<T>> = new Set();
-    private currentValue: T;
+    private currentValue!: T;
 
     /**
      * Subscribes to a value changes
