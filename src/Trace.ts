@@ -93,6 +93,24 @@ export interface IObjectTrace {
 
 /**
  * Helper class that can be used to trace method calls programmatically
+ *
+ * Usage example:
+ * ```ts
+ * const methodTracer: IDisposable = Trace.method({
+ *     object: myObjectInstance,           // You can define an object constructor for static methods as well
+ *     method: myObjectInstance.method,    // The method to be tracked
+ *     isAsync: true,                      // if you set to async, method finished will be *await*-ed
+ *     onCalled: (traceData) => {
+ *         console.log("Method called:", traceData)
+ *     },
+ *     onFinished: (traceData) => {
+ *         console.log("Method call finished:", traceData)
+ *     },
+ *     onError: (traceData) => {
+ *         console.log("Method throwed an error:", traceData)
+ *     }
+ * });
+ * ```
  */
 export class Trace {
     private static objectTraces: Map<object, IObjectTrace> = new Map();

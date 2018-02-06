@@ -1,5 +1,7 @@
 /**
  * Helper class for path-related functions and methods
+ *
+ * The class contains general helper methods for joining, splitting, modifying and validating paths.
  */
 export class PathHelper {
 
@@ -56,6 +58,7 @@ export class PathHelper {
     /**
      * Returns the full path for a content based on its Id or Path
      * @param {string | number} idOrPath the Id Or Path of the content
+     * @returns A full Id or Path-based url of the content (e.g.  *'/content(1)'* or *'/Root/Example/('Content')'*)
      */
     public static getContentUrl(idOrPath: string | number): string {
         const parsed = parseInt(idOrPath as string, 10);
@@ -110,6 +113,7 @@ export class PathHelper {
     /**
      * Returns the parent path from a specified path.
      * e.g. "/Root/Example/Content" will return "/Root/Example"
+     *
      * "Root" will always return "Root"
      * @param path The content path
      */
