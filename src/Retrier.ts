@@ -1,32 +1,24 @@
-
-/**
- * @module Retrier
- * @preferred
- *
- * @description Module for Retrier.
- *
- */ /** */
-
 import { RetrierOptions } from "./RetrierOptions";
 
 /**
  * Utility class for retrying operations.
+ *
  * Usage example:
  * ```
- *          const methodToRetry: () => Promise<boolean> = async () => {
- *              let hasSucceeded = false;
- *              // ...
- *              // custom logic
- *              // ...
- *              return hasSucceeded;
- *          }
- *          const retrierSuccess = await Retrier.create(methodToRetry)
- *              .setup({
- *                  retries: 3,
- *                  retryIntervalMs: 1,
- *                  timeoutMs: 1000
- *              })
- *              .run();
+ * const methodToRetry: () => Promise<boolean> = async () => {
+ *     let hasSucceeded = false;
+ *     // ...
+ *     // custom logic
+ *     // ...
+ *     return hasSucceeded;
+ * }
+ * const retrierSuccess = await Retrier.create(methodToRetry)
+ *     .setup({
+ *         retries: 3,
+ *         retryIntervalMs: 1,
+ *         timeoutMs: 1000
+ *     })
+ *     .run();
  * ```
  */
 export class Retrier {
