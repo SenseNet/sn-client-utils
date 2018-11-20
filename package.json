@@ -1,5 +1,5 @@
 {
-  "name": "@sensnet/client-utils",
+  "name": "@sensenet/client-utils",
   "version": "1.4.0",
   "description": "General sensenet ECM independent client side utilities",
   "main": "dist/index.js",
